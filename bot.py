@@ -7,8 +7,8 @@ import time
 # ============================================================
 #  SETTINGS – fill these in!
 # ============================================================
-
-BOT_TOKEN     = "TOKEN"
+import os
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 YOUR_USER_ID  = 1513186874649219276
 
 ORDERS_CHANNEL_ID    = 1513254320567615559  # #orders-webhook
