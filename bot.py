@@ -3,7 +3,8 @@ from discord import app_commands
 from discord.ui import Modal, TextInput, View
 import asyncio
 import time
-
+from flask import Flask
+from threading import Thread
 # ============================================================
 #  SETTINGS – fill these in!
 # ============================================================
@@ -272,5 +273,21 @@ async def on_ready():
     print(f"✅ Bot online: {client.user}")
     print(f"📋 Commands synced!")
 
+# ============================================================
+#  KEEP-ALIVE WEBSERVER (für Render)
+# ============================================================
+from flask import Flask
+from threading import Thread
 
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run_flask():
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
+
+Thread(target=run_flask).start()
 client.run(BOT_TOKEN)
