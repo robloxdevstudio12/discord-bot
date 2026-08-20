@@ -2,15 +2,24 @@ import discord
 from discord import app_commands
 from discord.ui import Modal, TextInput, View
 import asyncio
+import os
 import time
+import threading
 from flask import Flask
-from threading import Thread
+
 # ============================================================
 #  SETTINGS – fill these in!
 # ============================================================
-import os
+
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError(
+        "BOT_TOKEN environment variable is not set! "
+        "Add it in Render under Settings -> Environment."
+    )
+
 YOUR_USER_ID  = 1513186874649219276
+GUILD_ID      = discord.Object(id=1513194284633952297)  # your server – instant sync
 
 ORDERS_CHANNEL_ID    = 1513254320567615559  # #orders-webhook
 COMPLETED_CHANNEL_ID = 1513546398249914560  # #completed-orders
@@ -28,6 +37,26 @@ tree   = app_commands.CommandTree(client)
 
 cooldowns = {}
 COOLDOWN_SECONDS = 300
+
+
+# ============================================================
+#  KEEP-ALIVE WEB SERVER (required so Render marks the service
+#  as healthy, and so UptimeRobot has something to ping)
+# ============================================================
+web_app = Flask(__name__)
+
+
+@web_app.route("/")
+def home():
+    return "Bot is running!"
+
+
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host="0.0.0.0", port=port)
+
+
+threading.Thread(target=run_web, daemon=True).start()
 
 
 # ============================================================
@@ -266,28 +295,13 @@ async def help_cmd(interaction: discord.Interaction):
 # ============================================================
 @client.event
 async def on_ready():
-    await tree.sync()
+    tree.copy_global_to(guild=GUILD_ID)
+    await tree.sync(guild=GUILD_ID)
     await client.change_presence(
         activity=discord.Activity(type=discord.ActivityType.watching, name="🎮 robloxdevstudio.pages.dev")
     )
     print(f"✅ Bot online: {client.user}")
     print(f"📋 Commands synced!")
 
-# ============================================================
-#  KEEP-ALIVE WEBSERVER (für Render)
-# ============================================================
-from flask import Flask
-from threading import Thread
 
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is alive!"
-
-def run_flask():
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
-
-Thread(target=run_flask).start()
 client.run(BOT_TOKEN)
